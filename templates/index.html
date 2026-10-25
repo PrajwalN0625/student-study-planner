@@ -5,58 +5,781 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Study Planner</title>
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 18px;
+            margin: 22px 0;
+        }
+
+        .analytics-card, .analytics-panel {
+            background: var(--card-bg, #fff);
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 4px 14px rgba(0,0,0,.04);
+            margin-bottom: 20px;
+        }
+
+        .analytics-card h3 {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0 0 12px;
+        }
+
+        .analytics-number {
+            font-size: 30px;
+            font-weight: 700;
+            color: #4f46e5;
+            margin: 0;
+        }
+
+        .week-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            gap: 12px;
+            min-height: 220px;
+            padding-top: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .week-day { flex: 1; text-align: center; min-width: 25px; }
+
+        .week-bar-area {
+            height: 155px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .week-bar {
+            width: min(42px, 80%);
+            min-height: 4px;
+            background: linear-gradient(180deg, #818cf8, #4f46e5);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .week-day small {
+            display: block;
+            margin: 8px 0;
+            color: #64748b;
+        }
+
+        .progress-track {
+            height: 10px;
+            width: 100%;
+            background: #e5e7eb;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #6366f1;
+            border-radius: 20px;
+        }
+
+        .subject-row { margin: 20px 0; }
+
+        .subject-heading {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .analytics-table th, .analytics-table td {
+            text-align: left;
+            padding: 12px 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .analytics-empty, .muted { color: #64748b; }
+        .analytics-empty { padding: 18px 0; }
+        .page-content { margin-top: 20px; }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .form-row input, .form-row select {
+            padding: 10px;
+            max-width: 100%;
+        }
+
+        .task-card { margin: 12px 0; }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* AI assistant */
+        .ai-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ai-intro { margin-bottom: 4px; }
+
+        .ai-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .ai-controls label { font-weight: 600; }
+
+        .ai-controls select {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 9px;
+            background: white;
+            max-width: 100%;
+        }
+
+        .ai-chat {
+            min-height: 260px;
+            max-height: 480px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ai-message {
+            max-width: 90%;
+            padding: 12px 14px;
+            border-radius: 12px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+
+        .ai-message.assistant {
+            align-self: flex-start;
+            background: white;
+            border: 1px solid #e5e7eb;
+        }
+
+        .ai-message.user {
+            align-self: flex-end;
+            background: #e0e7ff;
+            border: 1px solid #c7d2fe;
+        }
+
+        .ai-message.error {
+            align-self: stretch;
+            max-width: 100%;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+        }
+
+        .ai-compose {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .ai-compose textarea {
+            flex: 1;
+            min-width: 0;
+            min-height: 54px;
+            max-height: 160px;
+            resize: vertical;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font: inherit;
+        }
+
+        .ai-compose button, .ai-controls button {
+            padding: 11px 16px;
+            border: 0;
+            border-radius: 9px;
+            cursor: pointer;
+            background: #4f46e5;
+            color: white;
+            font-weight: 600;
+        }
+
+        .ai-compose button:disabled { opacity: .6; cursor: wait; }
+
+        .ai-shortcuts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ai-shortcuts button {
+            padding: 8px 11px;
+            border: 1px solid #c7d2fe;
+            border-radius: 20px;
+            background: #eef2ff;
+            color: #3730a3;
+            cursor: pointer;
+        }
+
+        .ai-note { font-size: 13px; }
+
+        @media (max-width: 600px) {
+            .analytics-panel { padding: 15px; }
+            .analytics-table { font-size: 13px; }
+            .ai-compose { flex-direction: column; align-items: stretch; }
+            .ai-compose button { width: 100%; }
+            .ai-message { max-width: 100%; }
+        }
+    </style>
 </head>
-<body>
-    <div class="container">
-        <header>
-            <h1>📚 Student Study Planner</h1>
-            <p>Plan your day. Achieve your goals.</p>
+
+<body class="app-body">
+<div class="app-layout">
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">📚</div>
+            <div>
+                <h2>Study Planner</h2>
+                <p>Study smarter</p>
+            </div>
+        </div>
+
+        <p class="menu-heading">WORKSPACE</p>
+
+        <nav class="sidebar-nav">
+            {% for page, label, symbol in [
+                ('dashboard', 'Dashboard', '▦'),
+                ('today', "Today's Tasks", '◷'),
+                ('tasks', 'All Tasks', '☷'),
+                ('achievements', 'Achievements', '🏆'),
+                ('calendar', 'Calendar & Timetable', '▦'),
+                ('focus', 'Focus Timer', '◴'),
+                ('analytics', 'Study Analytics', '▥'),
+                ('assistant', 'AI Study Assistant', '✧')
+            ] %}
+                <a href="{{ url_for('home', page=page) }}"
+                   class="nav-link {% if active_page == page %}active{% endif %}">
+                    <span>{{ symbol }}</span> {{ label }}
+                </a>
+            {% endfor %}
+        </nav>
+
+        <div class="sidebar-bottom">
+            <a href="{{ url_for('home', page='settings') }}"
+               class="nav-link {% if active_page == 'settings' %}active{% endif %}">
+                <span>⚙</span> Settings
+            </a>
+            <p>Keep learning. Keep growing.</p>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <h1>
+                    {% if active_page == 'dashboard' %}Dashboard
+                    {% elif active_page == 'today' %}Today's Tasks
+                    {% elif active_page == 'tasks' %}All Tasks
+                    {% elif active_page == 'achievements' %}Achievements
+                    {% elif active_page == 'calendar' %}Calendar & Timetable
+                    {% elif active_page == 'focus' %}Focus Timer
+                    {% elif active_page == 'analytics' %}Study Analytics
+                    {% elif active_page == 'assistant' %}AI Study Assistant
+                    {% elif active_page == 'settings' %}Settings
+                    {% endif %}
+                </h1>
+                <p>Your personal space to plan and track your studies.</p>
+            </div>
+            <div class="today-date">📅 {{ today }}</div>
         </header>
 
-        <section class="planner">
-            <h2>My Study Tasks</h2>
+        <div class="page-content">
 
-            <p class="progress">
-                Completed: {{ completed_count }} / {{ tasks|length }}
-            </p>
+        {% if active_page == 'analytics' %}
 
-            <form action="{{ url_for('add') }}" method="POST">
-                <input type="text" name="task"
-                       placeholder="What do you need to study?" required>
-                <button type="submit">+ Add Task</button>
-            </form>
+            <section class="welcome-panel">
+                <h2>📊 Your Study Analytics</h2>
+                <p>Track your task completion and focus sessions. Your statistics update as you use the planner.</p>
+            </section>
 
-            <ul class="task-list">
-                {% for task in tasks %}
-                <li class="{% if task.completed %}completed{% endif %}">
-                    <span>{{ task.title }}</span>
+            <section class="analytics-grid">
+                <div class="analytics-card"><h3>📚 Total Tasks</h3><p class="analytics-number">{{ analytics_total_tasks }}</p></div>
+                <div class="analytics-card"><h3>✅ Completed Tasks</h3><p class="analytics-number">{{ analytics_completed_tasks }}</p></div>
+                <div class="analytics-card"><h3>⏳ Pending Tasks</h3><p class="analytics-number">{{ analytics_pending_tasks }}</p></div>
+                <div class="analytics-card">
+                    <h3>⏱️ Total Focus Time</h3>
+                    <p class="analytics-number">{{ analytics_total_focus_minutes // 60 }}h {{ analytics_total_focus_minutes % 60 }}m</p>
+                </div>
+                <div class="analytics-card"><h3>🎯 Completed Focus Sessions</h3><p class="analytics-number">{{ analytics_total_focus_sessions }}</p></div>
+            </section>
 
-                    <div class="actions">
-                        <form action="{{ url_for('complete', task_id=task.id) }}"
-                              method="POST">
-                            <button type="submit">
-                                {% if task.completed %}Undo{% else %}Complete{% endif %}
-                            </button>
-                        </form>
+            <section class="analytics-panel">
+                <h2>📅 This Week's Focus Time</h2>
+                <p class="muted">Focus minutes recorded each day, Monday to Sunday.</p>
+                <div class="week-chart">
+                    {% for day in analytics_weekly_data %}
+                        <div class="week-day">
+                            <div class="week-bar-area">
+                                {% if analytics_max_daily_minutes > 0 %}
+                                    {% set bar_height = (day.minutes * 100 / analytics_max_daily_minutes)|int %}
+                                {% else %}
+                                    {% set bar_height = 0 %}
+                                {% endif %}
+                                <div class="week-bar" style="height: {{ bar_height }}%;"
+                                     title="{{ day.minutes }} minutes"></div>
+                            </div>
+                            <strong>{{ day.minutes }}</strong>
+                            <small>{{ day.day }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
 
-                        <form action="{{ url_for('delete', task_id=task.id) }}"
-                              method="POST">
-                            <button type="submit" class="delete">Delete</button>
-                        </form>
-                    </div>
-                </li>
+            <section class="analytics-panel">
+                <h2>📚 Subject-wise Task Progress</h2>
+                <p class="muted">See how many tasks you've completed in each subject.</p>
+                {% if analytics_subject_stats %}
+                    {% for item in analytics_subject_stats %}
+                        <div class="subject-row">
+                            <div class="subject-heading">
+                                <strong>{{ item.subject }}</strong>
+                                <span>{{ item.completed }}/{{ item.total }} completed</span>
+                            </div>
+                            <div class="progress-track"><div class="progress-fill" style="width: {{ item.percent }}%;"></div></div>
+                            <small class="muted">{{ item.percent }}% complete · {{ item.pending }} pending</small>
+                        </div>
+                    {% endfor %}
                 {% else %}
-                <li class="empty">No tasks yet. Add your first task!</li>
-                {% endfor %}
-            </ul>
-        </section>
+                    <p class="analytics-empty">Add tasks to see subject progress.</p>
+                {% endif %}
+            </section>
 
-        <footer>
-            Built by a First-Year CSE Student 💻
-        </footer>
-    </div>
+            <section class="analytics-panel">
+                <h2>🕒 Recent Focus Activity</h2>
+                {% if analytics_recent_sessions %}
+                    <table class="analytics-table">
+                        <thead><tr><th>Session</th><th>Duration</th><th>Completed At</th></tr></thead>
+                        <tbody>
+                        {% for session in analytics_recent_sessions %}
+                            <tr>
+                                <td>
+                                    {% if session.session_type == 'focus' %}🎯 Focus
+                                    {% elif session.session_type == 'short_break' %}☕ Short Break
+                                    {% else %}🌿 Long Break{% endif %}
+                                </td>
+                                <td>{{ session.duration_minutes }} min</td>
+                                <td>{{ session.completed_at }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="analytics-empty">No focus sessions recorded yet.</p>
+                {% endif %}
+            </section>
+
+        {% elif active_page == 'dashboard' %}
+
+            <section class="welcome-panel">
+                <h2>Welcome back! 👋</h2>
+                <p>Small progress every day adds up to big results.</p>
+            </section>
+
+            <section class="analytics-grid">
+                <div class="analytics-card"><h3>Total Tasks</h3><p class="analytics-number">{{ stats.total_tasks }}</p></div>
+                <div class="analytics-card"><h3>Completed</h3><p class="analytics-number">{{ stats.completed_tasks }}</p></div>
+                <div class="analytics-card"><h3>Pending</h3><p class="analytics-number">{{ stats.pending_tasks }}</p></div>
+                <div class="analytics-card"><h3>Task Progress</h3><p class="analytics-number">{{ stats.completion_percentage }}%</p></div>
+                <div class="analytics-card"><h3>Total Focus Time</h3><p class="analytics-number">{{ stats.focus_minutes // 60 }}h {{ stats.focus_minutes % 60 }}m</p></div>
+            </section>
+
+            <section class="analytics-panel">
+                <h2>📌 Today's Tasks</h2>
+                {% if today_tasks %}
+                    {% for task in today_tasks %}
+                        <div class="task-card">
+                            <h3>{{ task.title }}</h3>
+                            <p>{{ task.subject }} · {{ task.priority }} priority</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="analytics-empty">No tasks due today.</p>
+                {% endif %}
+                <a href="{{ url_for('home', page='tasks') }}">Manage your tasks →</a>
+            </section>
+
+        {% elif active_page == 'today' %}
+
+            <section class="analytics-panel">
+                <h2>📅 Tasks Due Today</h2>
+                {% if today_tasks %}
+                    {% for task in today_tasks %}
+                        <div class="task-card">
+                            <h3>{{ task.title }}</h3>
+                            <p>{{ task.subject }} · {{ task.priority }} priority</p>
+                            {% if task.due_date %}<p>Deadline: {{ task.due_date }}</p>{% endif %}
+                            <p>{% if task.completed %}✅ Completed{% else %}⏳ Pending{% endif %}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="analytics-empty">No tasks due today.</p>
+                {% endif %}
+            </section>
+
+        {% elif active_page == 'tasks' %}
+
+            <section class="analytics-panel">
+                <h2>➕ Add a New Task</h2>
+                <form action="{{ url_for('add') }}" method="POST">
+                    <div class="form-row">
+                        <input type="text" name="title" placeholder="Enter your study task..." required>
+                    </div>
+                    <div class="form-row">
+                        <select name="subject" required>
+                            {% for subject in subjects %}<option value="{{ subject }}">{{ subject }}</option>{% endfor %}
+                        </select>
+                        <select name="priority" required>
+                            {% for priority in priorities %}
+                                <option value="{{ priority }}" {% if priority == 'Medium' %}selected{% endif %}>{{ priority }} Priority</option>
+                            {% endfor %}
+                        </select>
+                        <label for="due_date">Deadline:</label>
+                        <input type="date" id="due_date" name="due_date">
+                        <button type="submit">Add Task</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="analytics-panel">
+                <h2>📝 Your Study Tasks</h2>
+                {% if tasks %}
+                    {% for task in tasks %}
+                        <div class="task-card {% if task.completed %}completed-task{% endif %}">
+                            <div class="task-info">
+                                <h3>{{ task.title }}</h3>
+                                <p>📘 {{ task.subject }} · {{ task.priority }} priority</p>
+                                {% if task.due_date %}<p>📅 Deadline: {{ task.due_date }}</p>{% endif %}
+                                <p>{% if task.completed %}✅ Completed{% else %}⏳ Pending{% endif %}</p>
+                            </div>
+                            <div class="task-actions">
+                                <form action="{{ url_for('complete', task_id=task.id) }}" method="POST">
+                                    <button type="submit">{% if task.completed %}Undo{% else %}Complete{% endif %}</button>
+                                </form>
+                                <form action="{{ url_for('delete', task_id=task.id) }}" method="POST"
+                                      onsubmit="return confirm('Delete this task?');">
+                                    <button type="submit" class="delete-button">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="analytics-empty">No tasks yet. Add your first task above!</p>
+                {% endif %}
+            </section>
+
+        {% elif active_page == 'achievements' %}
+
+            <section class="welcome-panel">
+                <h2>🏆 Achievements</h2>
+                <p>Keep completing tasks and building your study habits.</p>
+            </section>
+            <section class="analytics-grid">
+                <div class="analytics-card"><h3>Tasks Completed</h3><p class="analytics-number">{{ stats.completed_tasks }}</p></div>
+                <div class="analytics-card"><h3>Focus Sessions</h3><p class="analytics-number">{{ analytics_total_focus_sessions }}</p></div>
+            </section>
+            <section class="analytics-panel">
+                <h2>🎯 Your Next Milestones</h2>
+                <p>Complete your first task, then aim for 5 and 25 completed tasks.</p>
+                {% set milestone = (stats.completed_tasks * 100 / 25)|int %}
+                <div class="progress-track"><div class="progress-fill" style="width: {{ [milestone, 100]|min }}%;"></div></div>
+                <p>{{ stats.completed_tasks }} of 25 tasks completed toward the 25-task milestone.</p>
+            </section>
+
+        {% elif active_page == 'calendar' %}
+
+            <section class="analytics-panel">
+                <h2>📅 Add a Study Session</h2>
+                <form action="{{ url_for('add_session') }}" method="POST">
+                    <div class="form-row">
+                        <input type="text" name="title" placeholder="Session title" required>
+                        <select name="subject">
+                            {% for subject in subjects %}<option value="{{ subject }}">{{ subject }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <label>Date <input type="date" name="session_date" required></label>
+                        <label>Start <input type="time" name="start_time" required></label>
+                        <label>End <input type="time" name="end_time" required></label>
+                        <button type="submit">Add Session</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="analytics-panel">
+                <h2>🗓️ Your Timetable</h2>
+                {% if calendar_sessions %}
+                    {% for session in calendar_sessions %}
+                        <div class="task-card">
+                            <h3>{{ session.title }}</h3>
+                            <p>{{ session.subject }} · {{ session.session_date }}</p>
+                            <p>{{ session.start_time }} – {{ session.end_time }}</p>
+                            <form action="{{ url_for('delete_session', session_id=session.id) }}" method="POST"
+                                  onsubmit="return confirm('Delete this session?');">
+                                <button type="submit" class="delete-button">Delete Session</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="analytics-empty">No study sessions scheduled yet.</p>
+                {% endif %}
+            </section>
+
+        {% elif active_page == 'focus' %}
+
+            <section class="analytics-panel" style="text-align:center;">
+                <h2>⏱️ Focus Timer</h2>
+                <p class="muted">Work in focused sessions, then take a break.</p>
+                <div id="timer-display" style="font-size:64px;font-weight:700;margin:30px 0;">25:00</div>
+                <div class="form-row" style="justify-content:center;">
+                    <button type="button" onclick="chooseTimer(25, 'focus')">Focus · 25 min</button>
+                    <button type="button" onclick="chooseTimer(5, 'short_break')">Short Break · 5 min</button>
+                    <button type="button" onclick="chooseTimer(15, 'long_break')">Long Break · 15 min</button>
+                </div>
+                <div class="form-row" style="justify-content:center;">
+                    <button type="button" onclick="startTimer()">Start</button>
+                    <button type="button" onclick="pauseTimer()">Pause</button>
+                    <button type="button" onclick="resetTimer()">Reset</button>
+                </div>
+                <p id="timer-status" class="muted">Ready when you are.</p>
+            </section>
+
+            <script>
+                let selectedDuration = 25;
+                let selectedType = 'focus';
+                let remainingSeconds = 25 * 60;
+                let timerInterval = null;
+                let timerRunning = false;
+
+                function updateTimerDisplay() {
+                    const minutes = Math.floor(remainingSeconds / 60);
+                    const seconds = remainingSeconds % 60;
+                    document.getElementById('timer-display').textContent =
+                        String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                }
+
+                function chooseTimer(minutes, type) {
+                    pauseTimer();
+                    selectedDuration = minutes;
+                    selectedType = type;
+                    remainingSeconds = minutes * 60;
+                    updateTimerDisplay();
+                    document.getElementById('timer-status').textContent = 'Selected ' + type.replace('_', ' ') + '.';
+                }
+
+                function startTimer() {
+                    if (timerRunning) return;
+                    timerRunning = true;
+                    document.getElementById('timer-status').textContent = 'Timer running...';
+
+                    timerInterval = setInterval(async function() {
+                        remainingSeconds--;
+                        updateTimerDisplay();
+
+                        if (remainingSeconds <= 0) {
+                            pauseTimer();
+                            document.getElementById('timer-status').textContent = 'Session completed!';
+
+                            try {
+                                const response = await fetch("{{ url_for('save_focus_session') }}", {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({
+                                        session_type: selectedType,
+                                        duration_minutes: selectedDuration
+                                    })
+                                });
+
+                                if (!response.ok) {
+                                    document.getElementById('timer-status').textContent =
+                                        'Timer ended, but the session could not be saved.';
+                                }
+                            } catch (error) {
+                                document.getElementById('timer-status').textContent =
+                                    'Timer ended, but saving failed.';
+                            }
+                        }
+                    }, 1000);
+                }
+
+                function pauseTimer() {
+                    if (timerInterval) clearInterval(timerInterval);
+                    timerInterval = null;
+                    timerRunning = false;
+                }
+
+                function resetTimer() {
+                    pauseTimer();
+                    remainingSeconds = selectedDuration * 60;
+                    updateTimerDisplay();
+                    document.getElementById('timer-status').textContent = 'Timer reset.';
+                }
+            </script>
+
+        {% elif active_page == 'assistant' %}
+
+            <section class="analytics-panel ai-shell">
+                <div class="ai-intro">
+                    <h2>✧ Your AI Study Assistant</h2>
+                    <p>Ask questions, understand difficult concepts, create revision notes, practise quizzes, or plan your study time.</p>
+                </div>
+
+                <div class="ai-controls">
+                    <label for="ai-mode">Study mode:</label>
+                    <select id="ai-mode">
+                        <option value="chat">Ask anything</option>
+                        <option value="explain">Explain a topic</option>
+                        <option value="quiz">Practice quiz</option>
+                        <option value="notes">Revision notes</option>
+                        <option value="plan">Plan my pending tasks</option>
+                    </select>
+                </div>
+
+                <div class="ai-shortcuts">
+                    <button type="button" data-prompt="Explain loops in C with a simple example.">Explain C loops</button>
+                    <button type="button" data-prompt="Create five beginner practice questions about C programming.">C practice quiz</button>
+                    <button type="button" data-prompt="Make short revision notes on differential equations.">Revision notes</button>
+                    <button type="button" data-prompt="Make a realistic study plan from my pending tasks.">Plan my studies</button>
+                </div>
+
+                <div id="ai-chat" class="ai-chat" role="log" aria-live="polite">
+                    <div class="ai-message assistant">Hi! I'm your AI Study Assistant. 👋
+
+Choose a study mode, then ask me a question. I'll explain things step by step.</div>
+                </div>
+
+                <form id="ai-form" class="ai-compose">
+                    <textarea id="ai-message" maxlength="4000"
+                              placeholder="Ask a study question..." required></textarea>
+                    <button id="ai-send" type="submit">Send</button>
+                </form>
+
+                <p id="ai-status" class="muted ai-note">Your question is sent to the AI service through your Flask app.</p>
+                <p class="muted ai-note">Do not enter passwords or other private information here.</p>
+            </section>
+
+            <script>
+                (() => {
+                    const form = document.getElementById('ai-form');
+                    const input = document.getElementById('ai-message');
+                    const mode = document.getElementById('ai-mode');
+                    const chat = document.getElementById('ai-chat');
+                    const sendButton = document.getElementById('ai-send');
+                    const status = document.getElementById('ai-status');
+
+                    function addMessage(text, kind) {
+                        const message = document.createElement('div');
+                        message.className = 'ai-message ' + kind;
+                        // Use textContent so returned text is displayed safely.
+                        message.textContent = text;
+                        chat.appendChild(message);
+                        chat.scrollTop = chat.scrollHeight;
+                        return message;
+                    }
+
+                    async function sendMessage(messageText) {
+                        const message = messageText.trim();
+                        if (!message || sendButton.disabled) return;
+
+                        addMessage(message, 'user');
+                        input.value = '';
+                        sendButton.disabled = true;
+                        status.textContent = 'Thinking...';
+
+                        const waiting = addMessage('Working on your answer...', 'assistant');
+
+                        try {
+                            const response = await fetch("{{ url_for('ai_assistant_chat') }}", {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({
+                                    message: message,
+                                    action: mode.value
+                                })
+                            });
+
+                            const result = await response.json();
+                            waiting.remove();
+
+                            if (!response.ok) {
+                                addMessage(result.error || 'The request failed. Please try again.', 'error');
+                                status.textContent = 'Could not get an answer.';
+                            } else {
+                                addMessage(result.answer || 'No answer was returned.', 'assistant');
+                                status.textContent = 'Answer received.';
+                            }
+                        } catch (error) {
+                            waiting.remove();
+                            addMessage('Could not contact the server. Check that Flask is still running and try again.', 'error');
+                            status.textContent = 'Connection error.';
+                        } finally {
+                            sendButton.disabled = false;
+                            input.focus();
+                        }
+                    }
+
+                    form.addEventListener('submit', function(event) {
+                        event.preventDefault();
+                        sendMessage(input.value);
+                    });
+
+                    input.addEventListener('keydown', function(event) {
+                        if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            form.requestSubmit();
+                        }
+                    });
+
+                    document.querySelectorAll('.ai-shortcuts button').forEach(function(button) {
+                        button.addEventListener('click', function() {
+                            sendMessage(button.dataset.prompt || '');
+                        });
+                    });
+                })();
+            </script>
+
+        {% elif active_page == 'settings' %}
+
+            <section class="analytics-panel">
+                <h2>⚙️ Settings</h2>
+                <p>This is your study planner settings area.</p>
+                <p class="muted">More customization options can be added here later.</p>
+            </section>
+
+        {% endif %}
+
+        </div>
+    </main>
+</div>
 </body>
 </html>
 
