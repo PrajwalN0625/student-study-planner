@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Study Planner</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Student Study Planner</h1>
+            <p>Plan your day. Achieve your goals.</p>
+        </header>
+
+        <section class="planner">
+            <h2>My Study Tasks</h2>
+
+            <p class="progress">
+                Completed: {{ completed_count }} / {{ tasks|length }}
+            </p>
+
+            <form action="{{ url_for('add') }}" method="POST">
+                <input type="text" name="task"
+                       placeholder="What do you need to study?" required>
+                <button type="submit">+ Add Task</button>
+            </form>
+
+            <ul class="task-list">
+                {% for task in tasks %}
+                <li class="{% if task.completed %}completed{% endif %}">
+                    <span>{{ task.title }}</span>
+
+                    <div class="actions">
+                        <form action="{{ url_for('complete', task_id=task.id) }}"
+                              method="POST">
+                            <button type="submit">
+                                {% if task.completed %}Undo{% else %}Complete{% endif %}
+                            </button>
+                        </form>
+
+                        <form action="{{ url_for('delete', task_id=task.id) }}"
+                              method="POST">
+                            <button type="submit" class="delete">Delete</button>
+                        </form>
+                    </div>
+                </li>
+                {% else %}
+                <li class="empty">No tasks yet. Add your first task!</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <footer>
+            Built by a First-Year CSE Student 💻
+        </footer>
+    </div>
+</body>
+</html>
+
